@@ -1,0 +1,64 @@
+#include < SoftwareSerial.h > #include < Wire.h >
+#include < LiquidCrystal_I2C.h >
+#define pin_out 7
+int humidityRaw;
+int humidityReal;
+int i;
+SoftwareSerial mySerial(9, 10);
+char msg;
+char call;
+LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
+void setup() { 
+mySerial.begin(9600); 
+Serial.begin(9600); 
+delay(100);
+lcd.begin(16, 2); 
+lcd.clear();
+lcd.print("Auto PSys System");
+}
+void loop() {
+int humidityRaw = analogRead(A0);
+int humidityReal = map(humidityRaw, 1023, 0, 0, 100); int i = 0;
+Serial.print("\nHumidity: "); 
+Serial.print(humidityReal); 
+Serial.print("%");
+    if (humidityReal < 20) {
+        SendMessageDry();
+ReceiveMessageNormal();
+    }
+}
+void SendMessageDry() 
+{ mySerial.println("AT+CMGF=1");
+delay(1000); 
+mySerial.println("AT+CMGS=\"+60136445235\"\r"); 
+delay(1000);
+mySerial.println("I need Water! Water me?"); 
+mySerial.println("Yes : Send 'Y'"); 
+mySerial.println(" ");
+mySerial.println("- Your Plant :) -"); 
+delay(100);
+mySerial.println((char) 26);
+delay(1000);
+}
+void ReceiveMessageNormal() {
+if (mySerial.available() > 0) {
+do {
+     msg = mySerial.read(); 
+     delay(1000);
+     i++;
+} while ((msg != 'Y') && (i != 60));
+switch (msg) { 
+case 'Y':
+pinMode(pin_out, OUTPUT); 
+digitalWrite(pin_out, LOW); 
+Serial.print("\nMotor On"); 
+lcd.setCursor(0, 1); 
+lcd.print("Motor On "); 
+delay(5000); 
+lcd.setCursor(0, 1); 
+lcd.print("Motor Off "); 
+digitalWrite(pin_out, HIGH); 
+delay(60000);
+}
+}
+}
